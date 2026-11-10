@@ -1,0 +1,40 @@
+# Builds the month from scratch on every push, runs the close blocked and then ready,
+# and checks every planted number. Also checks that the DAG imports cleanly in Airflow.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: demo
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pdemo"
+          --health-interval=5s --health-retries=20
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PASSWORD: demo
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: End-to-end close test
+        run: pytest -v tests
+      - name: DAG imports in Airflow
+        run: |
+          pip install "apache-airflow==2.10.5" \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.5/constraints-3.12.txt"
+          python -c "from airflow.models import DagBag; b = DagBag('dags', include_examples=False); assert not b.import_errors, b.import_errors; print(list(b.dags))"
