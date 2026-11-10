@@ -1,0 +1,76 @@
+{
+  "close_period": "2026-10",
+  "planted": {
+    "duplicate_txn_id": "IT-0004719",
+    "duplicate_event_id": "MC-0003757",
+    "lost_event_id": "MC-0006271"
+  },
+  "run_before_corrections": {
+    "status": "BLOCKED",
+    "open_breaks": {
+      "DUPLICATE": 1,
+      "MISSING_IN_ERP": 1
+    },
+    "open_break_value": 91.0,
+    "timing_breaks": 18
+  },
+  "run_after_corrections": {
+    "status": "READY",
+    "open_breaks": 0,
+    "timing_breaks": 18
+  },
+  "known_change": {
+    "ECO-0519": {
+      "eng_change_var": -2400.0,
+      "true_usage_var": 720.0
+    },
+    "ECO-0533": {
+      "eng_change_var": -800.0,
+      "true_usage_var": 0.0
+    }
+  },
+  "drift": {
+    "FOM-510": {
+      "count_shortage_qty": 40,
+      "shortage_events": 2,
+      "likely_cause": "UNRECORDED_SCRAP",
+      "drift_value": 600.0,
+      "count_priority": 1
+    },
+    "CON-710": {
+      "count_shortage_qty": 150,
+      "shortage_events": 3,
+      "likely_cause": "BOM_QTY",
+      "drift_value": 375.0,
+      "count_priority": 2
+    },
+    "BRK-100": {
+      "count_shortage_qty": 10,
+      "shortage_events": 1,
+      "likely_cause": "UNKNOWN",
+      "drift_value": 100.0,
+      "count_priority": 3
+    }
+  },
+  "orphaned": {
+    "BRK-100": {
+      "on_hand_qty": 1000,
+      "on_hand_value": 10000.0,
+      "receipts_after_change_qty": 1000,
+      "superseded_by_eco": "ECO-0519",
+      "status": "NO_REMAINING_USE"
+    },
+    "FRM-500": {
+      "on_hand_qty": 50,
+      "on_hand_value": 6000.0,
+      "receipts_after_change_qty": 0,
+      "superseded_by_eco": "ECO-0533",
+      "status": "NO_REMAINING_USE"
+    }
+  },
+  "wo_1001": {
+    "scrap_var": 200.0,
+    "labor_eff_var": 200.0
+  },
+  "ppv_total": 1015
+}
