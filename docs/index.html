@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Costed vs built</title>
+<meta name="description" content="Is the recipe we're costing the recipe we're actually building? A month-end close check on synthetic factory data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --concrete: #E9ECEC;
+    --panel: #FFFFFF;
+    --ink: #1E262C;
+    --steel: #5F6B73;
+    --rule: #CDD3D5;
+    --link: #2C5A86;
+    --go: #1E8449;
+    --wait: #C98E00;
+    --stop: #BE2E26;
+    --go-bg: #E3F2E8;
+    --stop-bg: #F8E3E1;
+    --wait-bg: #FBF0D6;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--concrete); color: var(--ink);
+    font: 16px/1.5 Barlow, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--link); }
+  :focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- the andon board: the one loud thing on the page ---------- */
+  .andon { color: #fff; transition: background-color .4s ease; }
+  .andon[data-state="READY"] { background: var(--go); }
+  .andon[data-state="BLOCKED"] { background: var(--stop); }
+  .andon .wrap { display: grid; grid-template-columns: 1fr auto; gap: 8px 32px; align-items: end; padding-top: 28px; padding-bottom: 28px; }
+  .andon .lamp { font: 700 clamp(64px, 12vw, 132px)/0.85 "Barlow Condensed", sans-serif; letter-spacing: .01em; margin: 0; }
+  .andon .what { font: 500 20px/1.3 "Barlow Condensed", sans-serif; margin: 0 0 10px; opacity: .92; }
+  .andon .why { grid-column: 1 / -1; margin: 6px 0 0; font-size: 18px; max-width: 70ch; }
+  .runs[hidden] { display: none; }
+  .runs { display: flex; gap: 0; border: 2px solid rgba(255,255,255,.85); border-radius: 6px; overflow: hidden; align-self: start; }
+  .runs button { font: 600 15px Barlow, sans-serif; color: #fff; background: transparent; border: 0; padding: 10px 14px; cursor: pointer; text-align: left; }
+  .runs button[aria-pressed="true"] { background: #fff; color: var(--ink); }
+  .runs button small { display: block; font-weight: 400; font-size: 13px; opacity: .85; }
+
+  /* ---------- body ---------- */
+  header.intro { padding: 36px 0 8px; }
+  h1 { font: 600 30px/1.2 Barlow, sans-serif; margin: 0 0 10px; max-width: 30ch; }
+  .lede { font-size: 18px; color: var(--steel); max-width: 68ch; margin: 0; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin: 28px 0 0; background: var(--rule); border: 1px solid var(--rule); }
+  .fact { background: var(--panel); padding: 16px 18px; }
+  .fact b { display: block; font: 700 34px/1.1 "Barlow Condensed", sans-serif; }
+  .fact span { color: var(--steel); font-size: 15px; }
+  nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 36px 0 0; border-bottom: 2px solid var(--ink); }
+  nav.tabs button { font: 600 16px Barlow, sans-serif; background: none; border: 0; padding: 10px 14px; cursor: pointer; color: var(--steel); border-radius: 6px 6px 0 0; }
+  nav.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
+  section.panel { background: var(--panel); padding: 24px; border: 1px solid var(--rule); border-top: 0; }
+  section.panel[hidden] { display: none; }
+  h2 { font: 600 22px/1.3 Barlow, sans-serif; margin: 0 0 6px; }
+  h3 { font: 600 17px/1.3 Barlow, sans-serif; margin: 26px 0 4px; }
+  .finding { margin: 0 0 14px; max-width: 75ch; }
+  .note { color: var(--steel); font-size: 15px; max-width: 75ch; }
+  .hold { background: var(--stop-bg); border-left: 4px solid var(--stop); padding: 14px 16px; margin: 0; max-width: 75ch; }
+  .scroll { overflow-x: auto; margin-top: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--rule); text-align: left; white-space: nowrap; }
+  th { font-weight: 600; color: var(--steel); border-bottom: 2px solid var(--rule); }
+  td.n, th.n { text-align: right; }
+  tbody tr[data-wo] { cursor: pointer; }
+  tbody tr[data-wo]:hover, tbody tr[data-wo]:focus-visible { background: #F1F4F6; }
+  .fav { color: var(--go); }
+  .unf { color: var(--stop); }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+  .tag.open { background: var(--stop-bg); color: var(--stop); }
+  .tag.explained { background: var(--wait-bg); color: #7A5600; }
+  .tag.cause { background: #E7EEF5; color: var(--link); }
+  .eco { border-left: 4px solid var(--ink); padding-left: 14px; margin-top: 22px; }
+  .eco p { margin: 2px 0; }
+  .split { display: flex; flex-wrap: wrap; gap: 28px; margin: 10px 0 4px; }
+  .split div b { display: block; font: 700 26px/1.1 "Barlow Condensed", sans-serif; }
+  .split div span { color: var(--steel); font-size: 14px; }
+
+  /* ---------- drill-down drawer ---------- */
+  dialog { width: min(920px, 96vw); max-height: 86vh; border: 0; border-radius: 8px; padding: 0; color: var(--ink); }
+  dialog::backdrop { background: rgba(30, 38, 44, .55); }
+  .dlg-head { display: flex; justify-content: space-between; gap: 16px; align-items: start; padding: 20px 24px 8px; position: sticky; top: 0; background: #fff; }
+  .dlg-body { padding: 0 24px 24px; }
+  .close-btn { font: 600 15px Barlow, sans-serif; border: 1px solid var(--rule); background: #fff; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+  tr.void td { text-decoration: line-through; color: var(--steel); }
+  tr.flag td { background: var(--stop-bg); }
+  footer { padding: 36px 0 48px; color: var(--steel); font-size: 15px; }
+  footer p { max-width: 75ch; }
+
+  @media (max-width: 720px) {
+    .wrap { padding: 0 16px; }
+    .andon .wrap { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: 1fr; }
+    section.panel { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .andon { transition: none; } }
+</style>
+</head>
+<body>
+<div class="andon" id="andon" data-state="READY" role="status" aria-live="polite">
+  <div class="wrap">
+    <div>
+      <p class="what" id="andon-what">October 2026 close, Giga Texas line (synthetic data)</p>
+      <p class="lamp" id="andon-lamp">READY</p>
+    </div>
+    <div class="runs" id="runs" role="group" aria-label="Which pipeline run to show">
+      <button type="button" data-run="before" aria-pressed="false">Nov 1 run<small>before the ERP fixes</small></button>
+      <button type="button" data-run="after" aria-pressed="true">Nov 2 run<small>after the ERP fixes</small></button>
+    </div>
+    <p class="why" id="andon-why"></p>
+  </div>
+</div>
+
+<main class="wrap">
+  <header class="intro">
+    <h1>Is the recipe we're costing the recipe we're actually building?</h1>
+    <p class="lede">Tesla books vehicles at standard cost. When a design change goes live before the standard is re-rolled, or the floor quietly uses parts differently from the bill of materials, the variance report fills with noise and real waste hides inside it. This close check reconciles the floor system with the ERP first, then separates the noise, finds the drift, and prices the parts left behind.</p>
+    <div class="facts" id="facts"></div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Checks">
+    <button role="tab" id="t-known" aria-controls="p-known" aria-selected="true">Known change</button>
+    <button role="tab" id="t-drift" aria-controls="p-drift" aria-selected="false">Unknown drift</button>
+    <button role="tab" id="t-orphan" aria-controls="p-orphan" aria-selected="false">Orphaned stock</button>
+    <button role="tab" id="t-recon" aria-controls="p-recon" aria-selected="false">Reconciliation</button>
+    <button role="tab" id="t-other" aria-controls="p-other" aria-selected="false">All variances</button>
+  </nav>
+  <section class="panel" role="tabpanel" id="p-known" aria-labelledby="t-known"></section>
+  <section class="panel" role="tabpanel" id="p-drift" aria-labelledby="t-drift" hidden></section>
+  <section class="panel" role="tabpanel" id="p-orphan" aria-labelledby="t-orphan" hidden></section>
+  <section class="panel" role="tabpanel" id="p-recon" aria-labelledby="t-recon" hidden></section>
+  <section class="panel" role="tabpanel" id="p-other" aria-labelledby="t-other" hidden></section>
+</main>
+
+<footer class="wrap">
+  <p>All data is synthetic: one month on a Giga Texas-like line, with every case planted on purpose and tested to the cent. Source systems are shaped like Tesla's public picture: an ERP like Warp (MySQL), a floor system like MOS, and a PLM for design changes. Table design and thresholds are assumptions, not Tesla's.</p>
+  <p>Built with MySQL, Airflow, SQL and Python, FastAPI, Docker and GitHub Actions. <a href="https://github.com/bananya007/costed-vs-built">Code and write-up on GitHub</a>. Click any row with a work order to see the floor events and ERP rows behind its number.</p>
+</footer>
+
+<dialog id="drawer" aria-labelledby="dlg-title">
+  <div class="dlg-head">
+    <div><h2 id="dlg-title"></h2><p class="note" id="dlg-sub"></p></div>
+    <button class="close-btn" type="button" id="dlg-close">Close</button>
+  </div>
+  <div class="dlg-body" id="dlg-body"></div>
+</dialog>
+
+<script>
+const PERIOD = "2026-10";
+const state = { mode: "static", run: "after", data: {}, trace: {} };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d = 0) => Number(v ?? 0).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const usd = (v) => (v < 0 ? "−$" : "$") + num(Math.abs(v), Math.abs(v) % 1 ? 2 : 0);
+// Variances: positive = unfavorable (spent more than standard), negative = favorable.
+const vtd = (v) => v == null ? '<td class="n">–</td>'
+  : `<td class="n ${v > 0 ? "unf" : v < 0 ? "fav" : ""}">${v === 0 ? "$0" : usd(v) + (v > 0 ? " U" : " F")}</td>`;
+const CAUSE = { BOM_QTY: "Recipe quantity looks wrong", UNRECORDED_SCRAP: "Losses not being logged", UNKNOWN: "One-off, investigate" };
+const BREAK = { TIMING: "Lands next month", MISSING_IN_ERP: "Never reached the ERP", DUPLICATE: "Booked twice",
+                QTY_MISMATCH: "Quantity differs", MISSING_IN_MES: "No floor event behind it" };
+
+async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error(url + " " + r.status); return r.json(); }
+
+async function load() {
+  try {           // live mode: served by the FastAPI app
+    state.data.after = await getJSON(`api/close/${PERIOD}`);
+    state.mode = "live";
+    $("runs").hidden = true;
+  } catch {       // static mode: GitHub Pages, two exported runs
+    const [b, a] = await Promise.all([getJSON("data/before.json"), getJSON("data/after.json")]);
+    state.data = { before: b, after: a };
+  }
+  render();
+}
+
+function render() {
+  const d = state.data[state.run];
+  const s = d.close_summary[0];
+  const ready = s.status === "READY";
+  $("andon").dataset.state = s.status;
+  $("andon-lamp").textContent = s.status;
+  $("andon-why").textContent = ready
+    ? `The floor system and the ERP agree. ${s.timing_break_count} postings fall across the month-end cutoff and land in November, which is expected. All checks below are live.`
+    : `${s.open_break_count} floor events disagree with the ERP ($${num(s.open_break_value, 2)} at standard). Variance numbers are held back until they are fixed, so nobody reads confident wrong answers.`;
+  document.querySelectorAll("#runs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.run === state.run));
+  renderFacts(d, s, ready);
+  renderKnown(d, ready); renderDrift(d, ready); renderOrphan(d, ready); renderRecon(d); renderOther(d, s, ready);
+  if (!ready) selectTab("t-recon");
+  else if (!$("p-recon").hidden && state.toggled) selectTab("t-known");
+  state.toggled = false;
+}
+
+function renderFacts(d, s, ready) {
+  if (!ready) {
+    $("facts").innerHTML = `
+      <div class="fact"><b>${s.open_break_count}</b><span>open reconciliation breaks</span></div>
+      <div class="fact"><b>$${num(s.open_break_value, 2)}</b><span>at standard, above the $${num(s.materiality)} threshold</span></div>
+      <div class="fact"><b>${s.timing_break_count}</b><span>cutoff postings, expected and explained</span></div>`;
+    return;
+  }
+  const noise = d.eco_impact.reduce((a, r) => a + Math.abs(r.eng_change_var), 0);
+  $("facts").innerHTML = `
+    <div class="fact"><b>$${num(noise)}</b><span>of usage variance is design-change noise, not waste</span></div>
+    <div class="fact"><b>$${num(s.drift_value)}</b><span>of parts used off-recipe, found through cycle counts</span></div>
+    <div class="fact"><b>$${num(s.orphaned_value)}</b><span>of old-revision stock no recipe uses, $${num(s.receipts_phased_out_value)} of it bought after the change</span></div>`;
+}
+
+const onHold = (what) => `<p class="hold">${what} is on hold until the floor system and the ERP agree. Open the Reconciliation tab to see the breaks.</p>`;
+
+function renderKnown(d, ready) {
+  const p = $("p-known");
+  if (!ready) { p.innerHTML = `<h2>Known change</h2>` + onHold("This check"); return; }
+  let html = `<h2>Known change</h2><p class="finding">When a design change goes live but the standard is still rolled on the old revision, usage variance shows big swings that are not waste. This splits each work order's variance into the change itself and real usage, so real waste can't hide.</p>`;
+  for (const e of d.ecos) {
+    const rows = d.eco_impact.filter(r => r.eco_id === e.eco_id);
+    if (!rows.length) continue;
+    const eng = rows.reduce((a, r) => a + r.eng_change_var, 0);
+    const tru = rows.reduce((a, r) => a + r.true_usage_var, 0);
+    const gross = rows.reduce((a, r) => a + Math.abs(r.eng_change_var), 0);
+    html += `<div class="eco"><h3>${esc(e.eco_id)}: ${esc(e.parent_item_id)} moved from Rev ${esc(e.from_rev)} to Rev ${esc(e.to_rev)} on ${esc(e.effective_date)}</h3>
+      <p class="note">${esc(e.reason)}. The October standard is still on Rev ${esc(e.costed_rev)}; the next cost roll is November 1.</p>
+      <div class="split">
+        <div><b>${usd(gross)}</b><span>gross swings an accountant would chase</span></div>
+        <div><b class="${eng < 0 ? "fav" : "unf"}">${usd(eng)}</b><span>net effect of the design change</span></div>
+        <div><b class="${tru > 0 ? "unf" : ""}">${usd(tru)}</b><span>real waste left after removing the noise</span></div>
+      </div>
+      <div class="scroll"><table><thead><tr><th>Work order</th><th>Part</th><th class="n">Units on new rev</th><th class="n">Standard allows</th><th class="n">New rev calls for</th><th class="n">Actually used</th><th class="n">Change noise</th><th class="n">Real usage</th></tr></thead><tbody>
+      ${rows.map(r => `<tr data-wo="${esc(r.work_order_id)}" data-item="${esc(r.component_item_id)}" tabindex="0"><td>${esc(r.work_order_id)}</td><td>${esc(r.component_item_id)}</td><td class="n">${num(r.units_built_new_rev)}</td><td class="n">${num(r.std_qty)}</td><td class="n">${num(r.built_qty)}</td><td class="n">${num(r.actual_qty)}</td>${vtd(r.eng_change_var)}${vtd(r.true_usage_var)}</tr>`).join("")}
+      </tbody></table></div></div>`;
+  }
+  p.innerHTML = html;
+}
+
+function renderDrift(d, ready) {
+  const p = $("p-drift");
+  if (!ready) { p.innerHTML = `<h2>Unknown drift</h2>` + onHold("This check"); return; }
+  p.innerHTML = `<h2>Unknown drift</h2>
+    <p class="finding">Backflushed parts always look perfect in the floor system, because it records what the recipe says. The truth shows up in cycle counts. This ties each count shortage back to the recipe and ranks what to count next.</p>
+    <div class="scroll"><table><thead><tr><th>Count first</th><th>Part</th><th>Recipe today</th><th class="n">Short at counts</th><th class="n">Counts short</th><th class="n">Drift</th><th class="n">Value</th><th>Likely cause</th><th>Suggested fix</th></tr></thead><tbody>
+    ${d.drift.map(r => `<tr><td>${r.count_priority}</td><td>${esc(r.component_item_id)}</td><td>${esc(r.current_qty_per || r.parent_item_ids)}</td><td class="n">${num(r.count_shortage_qty)}</td><td class="n">${r.shortage_events} of 4</td><td class="n">${num(r.drift_pct * 100, 1)}%</td><td class="n unf">${usd(r.drift_value)}</td><td><span class="tag cause">${esc(CAUSE[r.likely_cause])}</span></td><td>${esc(r.suggested_qty_per || (r.likely_cause === "UNRECORDED_SCRAP" ? "Check scrap logging at the station" : "Recount, then trace"))}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">How the cause is guessed: a shortage that stays proportional to use across three or more counts points to a wrong recipe quantity; shortages on some counts but not others point to losses nobody logged; a single shortage is a one-off. These are heuristics, labelled as likely.</p>`;
+}
+
+function renderOrphan(d, ready) {
+  const p = $("p-orphan");
+  if (!ready) { p.innerHTML = `<h2>Orphaned stock</h2>` + onHold("This check"); return; }
+  p.innerHTML = `<h2>Orphaned stock</h2>
+    <p class="finding">Parts that a design change removed from every recipe still sit on the shelf at standard cost. Flagging them the day the change goes live is cheaper than finding them at a quarter-end reserve review, and it catches parts still being bought.</p>
+    <div class="scroll"><table><thead><tr><th>Part</th><th>Removed by</th><th>Change live</th><th class="n">On hand</th><th class="n">Value</th><th class="n">Received after change</th><th>Remaining use</th></tr></thead><tbody>
+    ${d.orphaned.map(r => `<tr><td>${esc(r.item_id)}</td><td>${esc(r.superseded_by_eco)}</td><td>${esc(r.change_effective)}</td><td class="n">${num(r.on_hand_qty)}</td><td class="n">${usd(r.on_hand_value)}</td><td class="n ${r.receipts_after_change_qty > 0 ? "unf" : ""}">${num(r.receipts_after_change_qty)}</td><td>${r.status === "NO_REMAINING_USE" ? "None: no current recipe uses it" : `${num(r.days_of_supply, 1)} days of supply`}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">On hand is the ERP book quantity at month-end. The PLM records what to do with old parts (use as is, scrap, rework) but not what they are worth; this adds the dollars.</p>`;
+}
+
+function renderRecon(d) {
+  const open = d.breaks.filter(r => r.status === "OPEN");
+  const timing = d.breaks.filter(r => r.break_type === "TIMING");
+  const row = r => `<tr data-wo="${esc(r.work_order_id)}" data-item="${esc(r.item_id)}" data-event="${esc(r.source_event_id)}" tabindex="0"><td><span class="tag ${r.status === "OPEN" ? "open" : "explained"}">${r.status === "OPEN" ? "Open" : "Explained"}</span></td><td>${esc(BREAK[r.break_type])}</td><td>${esc(r.source_event_id)}</td><td>${esc(r.work_order_id)}</td><td>${esc(r.item_id)}</td><td class="n">${num(r.mes_qty)}</td><td class="n">${num(r.erp_qty_in_period)}</td><td class="n">${usd(r.diff_value)}</td><td>${esc(r.detail)}</td></tr>`;
+  const head = `<thead><tr><th>Status</th><th>What happened</th><th>Floor event</th><th>Work order</th><th>Part</th><th class="n">Floor qty</th><th class="n">ERP qty (Oct)</th><th class="n">Gap</th><th>Detail</th></tr></thead>`;
+  $("p-recon").innerHTML = `<h2>Reconciliation</h2>
+    <p class="finding">Every floor event should create one matching ERP row. Matching on the event ID means every break points at the exact event behind it. Open breaks at or above $25 block the close; postings that cross the month-end cutoff are explained automatically.</p>
+    ${open.length ? `<h3>Open breaks</h3><div class="scroll"><table>${head}<tbody>${open.map(row).join("")}</tbody></table></div>`
+      : `<p class="finding"><b>No open breaks.</b> The Nov 2 run picked up the ERP fixes: the duplicate row was voided in place and the lost row was posted late into October. A period reload catches both; a timestamp-based incremental load would miss the void.</p>`}
+    <h3>Explained: month-end cutoff (${timing.length})</h3>
+    <p class="note">The last three harness modules finished minutes before midnight on Oct 31; the ERP booked them on Nov 1.</p>
+    <div class="scroll"><table>${head}<tbody>${timing.map(row).join("")}</tbody></table></div>`;
+}
+
+function renderOther(d, s, ready) {
+  const p = $("p-other");
+  if (!ready) { p.innerHTML = `<h2>All variances</h2>` + onHold("The variance summary"); return; }
+  const line = (label, v) => `<tr><td>${label}</td>${vtd(v)}</tr>`;
+  p.innerHTML = `<h2>All variances</h2>
+    <p class="finding">The full October picture for the line, so the three checks can be read in context.</p>
+    <div class="scroll"><table style="max-width:520px"><tbody>
+      ${line("Purchase price (PPV)", s.ppv)}${line("Design-change noise", s.eng_change_var)}${line("Logged scrap", s.scrap_var)}${line("Other material usage", s.usage_var)}${line("Labor efficiency", s.labor_eff_var)}${line("Labor rate", s.labor_rate_var)}${line("Overhead absorption", s.overhead_var)}
+    </tbody></table></div>
+    <h3>Material variance by work order and part</h3>
+    <p class="note">Standard plus every variance adds back, to the cent, to the usage booked in the ERP; the pipeline fails if it doesn't.</p>
+    <div class="scroll"><table><thead><tr><th>Work order</th><th>Part</th><th>Costed rev</th><th>Built revs</th><th class="n">Standard allows</th><th class="n">Built calls for</th><th class="n">Used</th><th class="n">Scrap</th><th class="n">Change noise</th><th class="n">Scrap</th><th class="n">Other usage</th></tr></thead><tbody>
+    ${d.wo_material.filter(r => r.eng_change_var || r.scrap_var || r.usage_var).map(r => `<tr data-wo="${esc(r.work_order_id)}" data-item="${esc(r.component_item_id)}" tabindex="0"><td>${esc(r.work_order_id)}</td><td>${esc(r.component_item_id)}</td><td>${esc(r.costed_rev)}</td><td>${esc(r.built_revs)}</td><td class="n">${num(r.std_qty)}</td><td class="n">${num(r.built_qty)}</td><td class="n">${num(r.consumed_qty)}</td><td class="n">${num(r.scrap_qty)}</td>${vtd(r.eng_change_var)}${vtd(r.scrap_var)}${vtd(r.usage_var)}</tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">Only rows with a non-zero variance are listed.</p>`;
+}
+
+/* ---------- drill-down ---------- */
+async function openTrace(wo, item, eventId) {
+  $("dlg-title").textContent = `${wo}, ${item}`;
+  $("dlg-sub").textContent = "Loading the floor events and ERP rows behind this number";
+  $("dlg-body").innerHTML = "";
+  $("drawer").showModal();
+  let t;
+  try {
+    if (state.mode === "live") t = await getJSON(`api/trace?wo=${encodeURIComponent(wo)}&item=${encodeURIComponent(item)}`);
+    else {
+      if (!state.trace[state.run]) state.trace[state.run] = await getJSON(`data/${state.run}_trace.json`);
+      t = state.trace[state.run][`${wo}|${item}`];
+    }
+  } catch (err) { $("dlg-sub").textContent = "Couldn't load the trace: " + err.message; return; }
+  if (!t || (!t.mes.length && !t.erp.length)) {
+    $("dlg-sub").textContent = "No floor events and no ERP rows: this part was never used on this work order. Its line exists only because the standard (still on the old revision) expects it, which is exactly the noise this check separates out.";
+    return;
+  }
+  const mesTotal = t.mes.reduce((a, r) => a + r.qty, 0);
+  const erpTotal = t.erp.filter(r => !r.is_void).reduce((a, r) => a + (r.txn_type === "WO_COMPLETION" ? r.qty : -r.qty), 0);
+  $("dlg-sub").textContent = `Floor system: ${num(mesTotal)} recorded across ${t.mes.length} events. ERP: ${num(erpTotal)} across ${t.erp.filter(r => !r.is_void).length} rows that count.`;
+  const flag = (r) => eventId && r.source_event_id === eventId ? ' class="flag"' : "";
+  $("dlg-body").innerHTML = `
+    <h3>Floor events (MOS)</h3><div class="scroll"><table><thead><tr><th>Event</th><th>Type</th><th class="n">Qty</th><th>When</th></tr></thead><tbody>
+    ${t.mes.map(r => `<tr${flag(r)}><td>${esc(r.source_event_id)}</td><td>${esc(r.event_type.toLowerCase())}</td><td class="n">${num(r.qty)}</td><td>${esc(r.event_ts)}</td></tr>`).join("")}</tbody></table></div>
+    <h3>ERP rows (Warp)</h3><div class="scroll"><table><thead><tr><th>Row</th><th>Type</th><th class="n">Qty</th><th>Floor event</th><th>Books</th><th>When</th><th>Note</th></tr></thead><tbody>
+    ${t.erp.map(r => `<tr class="${r.is_void ? "void" : ""}"${flag(r)}><td>${esc(r.txn_id)}</td><td>${esc(r.txn_type.toLowerCase().replaceAll("_", " "))}</td><td class="n">${num(r.qty)}</td><td>${esc(r.source_event_id)}</td><td>${esc(r.fiscal_period)}</td><td>${esc(r.txn_ts)}</td><td>${esc(r.note || "")}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+document.addEventListener("click", (e) => {
+  const tr = e.target.closest("tr[data-wo]");
+  if (tr && tr.dataset.wo) openTrace(tr.dataset.wo, tr.dataset.item, tr.dataset.event);
+});
+document.addEventListener("keydown", (e) => {
+  const tr = e.target.closest && e.target.closest("tr[data-wo]");
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openTrace(tr.dataset.wo, tr.dataset.item, tr.dataset.event); }
+});
+$("dlg-close").addEventListener("click", () => $("drawer").close());
+$("drawer").addEventListener("click", (e) => { if (e.target === $("drawer")) $("drawer").close(); });
+document.querySelectorAll("#runs button").forEach(b => b.addEventListener("click", () => { state.run = b.dataset.run; state.toggled = true; render(); }));
+
+function selectTab(id) {
+  document.querySelectorAll('[role="tab"]').forEach(t => {
+    const on = t.id === id;
+    t.setAttribute("aria-selected", on);
+    $(t.getAttribute("aria-controls")).hidden = !on;
+  });
+}
+document.querySelectorAll('[role="tab"]').forEach(t => t.addEventListener("click", () => selectTab(t.id)));
+document.querySelector('nav.tabs').addEventListener("keydown", (e) => {
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const i = tabs.indexOf(document.activeElement);
+  if (i < 0) return;
+  const next = e.key === "ArrowRight" ? tabs[(i + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(i - 1 + tabs.length) % tabs.length] : null;
+  if (next) { next.focus(); selectTab(next.id); }
+});
+
+load().catch(err => {
+  $("andon-lamp").textContent = "NO DATA";
+  $("andon-why").textContent = "Couldn't load the close outputs. Run the pipeline first, then reload: " + err.message;
+});
+</script>
+</body>
+</html>
