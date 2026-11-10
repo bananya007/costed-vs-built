@@ -43,7 +43,7 @@ SELECT {{close_period}}, c.source_event_id, c.event_type, c.work_order_id, c.ite
        c.break_type,
        CASE WHEN c.break_type = 'TIMING' THEN 'EXPLAINED' ELSE 'OPEN' END,
        CASE c.break_type
-         WHEN 'TIMING' THEN CONCAT('Booked by the ERP in ', c.periods, '; lands next period')
+         WHEN 'TIMING' THEN CONCAT('ERP booked it in ', c.periods)
          WHEN 'MISSING_IN_ERP' THEN 'MOS recorded it; no ERP row exists'
          WHEN 'DUPLICATE' THEN CONCAT('ERP holds ', c.erp_rows, ' rows for one MOS event')
          ELSE 'ERP quantity differs from MOS'

@@ -3,8 +3,8 @@
   {
    "fiscal_period": "2026-10",
    "status": "BLOCKED",
-   "run_id": "cli-3fe7e884",
-   "run_at": "2026-11-10 17:19:01",
+   "run_id": "cli-5f94ba55",
+   "run_at": "2026-11-10 18:53:37",
    "materiality": 25.0,
    "open_break_count": 2,
    "open_break_value": 91.0,
@@ -68,7 +68,7 @@
    "diff_value": -102.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -84,7 +84,7 @@
    "diff_value": -102.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -100,7 +100,7 @@
    "diff_value": -102.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -116,7 +116,7 @@
    "diff_value": -55.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -132,7 +132,7 @@
    "diff_value": -55.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -148,7 +148,7 @@
    "diff_value": -55.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -164,7 +164,7 @@
    "diff_value": -10.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -180,7 +180,7 @@
    "diff_value": -10.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -196,7 +196,7 @@
    "diff_value": -10.0,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -212,7 +212,7 @@
    "diff_value": -1.2,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -228,7 +228,7 @@
    "diff_value": -1.2,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -244,7 +244,7 @@
    "diff_value": -1.2,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -260,7 +260,7 @@
    "diff_value": -0.6,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -276,7 +276,7 @@
    "diff_value": -0.6,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -292,7 +292,7 @@
    "diff_value": -0.6,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -308,7 +308,7 @@
    "diff_value": -0.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -324,7 +324,7 @@
    "diff_value": -0.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   },
   {
    "fiscal_period": "2026-10",
@@ -340,7 +340,7 @@
    "diff_value": -0.1,
    "break_type": "TIMING",
    "status": "EXPLAINED",
-   "detail": "Booked by the ERP in 2026-11; lands next period"
+   "detail": "ERP booked it in 2026-11"
   }
  ],
  "eco_impact": [],
@@ -377,6 +377,6 @@
  "meta": {
   "close_period": "2026-10",
   "label": "before",
-  "exported_at": "2026-11-10 11:19:01.712639"
+  "exported_at": "2026-11-10 12:53:37.637100"
  }
 }

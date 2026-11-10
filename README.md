@@ -70,6 +70,8 @@ flowchart TD
 
 **Event-level reconciliation.** Every floor event (part used, part scrapped, unit built) should create exactly one ERP row, and that row carries the event's id in `source_event_id`. Matching on the id means every break names the event behind it. `TIMING` (booked in the next month) is explained automatically. `MISSING_IN_ERP`, `DUPLICATE`, `QTY_MISMATCH` and `MISSING_IN_MES` stay open, and open breaks of $25 or more block the close.
 
+![Drill-down for WO-1010 / BRK-INT after the Nov 2 fix: the duplicate ERP row is voided, so 100 floor events match 100 ERP rows](docs/img/drill-down.png)
+
 **Known change.** Per work order and part: the standard allows units × quantity on the revision frozen in the cost standard; the built revision calls for units × quantity on the revision each unit was actually built on. *(built − standard) × price* is the design change; *(actual − built) × price* is real usage, split into logged scrap and other usage.
 
 **Unknown drift.** Each cycle-count shortage is compared with the recorded use since the previous count. A steady ratio across 3+ counts points to a wrong BOM quantity; shortages on some counts but not others point to unlogged losses; a single shortage is a one-off. The cause labels are heuristics and are reported as "likely".

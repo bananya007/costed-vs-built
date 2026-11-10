@@ -36,6 +36,7 @@ services:
     command: standalone
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__SCHEDULER__USE_JOB_SCHEDULE: "False"   # demo: runs only when triggered
       AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
       _PIP_ADDITIONAL_REQUIREMENTS: "PyMySQL==1.2.3"
       PYTHONPATH: /opt/airflow/project

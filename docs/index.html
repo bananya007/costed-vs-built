@@ -142,8 +142,8 @@
 </main>
 
 <footer class="wrap">
-  <p>All data is synthetic: one month on a Giga Texas-like line, containing the kind of issues a real close turns up, so every number can be checked against a known answer. Source systems are shaped like Tesla's public picture: an ERP like Warp (MySQL), a floor system like MOS, and a PLM for design changes. Table design and thresholds are assumptions, not Tesla's.</p>
-  <p>Built with MySQL, Airflow, SQL and Python, FastAPI, Docker and GitHub Actions. <a href="https://github.com/bananya007/costed-vs-built">Code and write-up on GitHub</a>. Click any row with a work order to see the floor events and ERP rows behind its number.</p>
+  <p>All data is synthetic: one simulated month on a Giga Texas-like line. Source systems are shaped like Tesla's public picture: an ERP like Warp (MySQL), a floor system like MOS, and a PLM for design changes. Table design and thresholds are assumptions, not Tesla's.</p>
+  <p>Built with MySQL, Airflow, SQL and Python, FastAPI, Docker and GitHub Actions. <a href="https://github.com/bananya007/costed-vs-built">Code and write-up on GitHub</a>. Click any row with a work order to see the floor events and ERP rows behind its number. <span id="snapshot-note">This page shows a saved run of the pipeline; run it locally with Docker to see it live.</span></p>
 </footer>
 
 <dialog id="drawer" aria-labelledby="dlg-title">
@@ -163,7 +163,7 @@ const num = (v, d = 0) => Number(v ?? 0).toLocaleString("en-US", { minimumFracti
 const usd = (v) => (v < 0 ? "−$" : "$") + num(Math.abs(v), Math.abs(v) % 1 ? 2 : 0);
 // Variances: positive = unfavorable (spent more than standard), negative = favorable.
 const vtd = (v) => v == null ? '<td class="n">–</td>'
-  : `<td class="n ${v > 0 ? "unf" : v < 0 ? "fav" : ""}">${v === 0 ? "$0" : usd(v) + (v > 0 ? " U" : " F")}</td>`;
+  : `<td class="n ${v > 0 ? "unf" : v < 0 ? "fav" : ""}">${v === 0 ? "$0" : usd(Math.abs(v)) + (v > 0 ? " U" : " F")}</td>`;
 const CAUSE = { BOM_QTY: "Recipe quantity looks wrong", UNRECORDED_SCRAP: "Losses not being logged", UNKNOWN: "One-off, investigate" };
 const BREAK = { TIMING: "Lands next month", MISSING_IN_ERP: "Never reached the ERP", DUPLICATE: "Booked twice",
                 QTY_MISMATCH: "Quantity differs", MISSING_IN_MES: "No floor event behind it" };
@@ -174,6 +174,7 @@ async function load() {
   try {           // live mode: served by the FastAPI app
     state.data.after = await getJSON(`api/close/${PERIOD}`);
     state.mode = "live";
+    $("snapshot-note").hidden = true;
     $("runs").hidden = true;
   } catch {       // static mode: GitHub Pages, two exported runs
     const [b, a] = await Promise.all([getJSON("data/before.json"), getJSON("data/after.json")]);
@@ -209,7 +210,7 @@ function renderFacts(d, s, ready) {
   }
   const noise = d.eco_impact.reduce((a, r) => a + Math.abs(r.eng_change_var), 0);
   $("facts").innerHTML = `
-    <div class="fact"><b>$${num(noise)}</b><span>of usage variance is design-change noise, not waste</span></div>
+    <div class="fact"><b>$${num(noise)}</b><span>of gross usage swings are design-change noise, not waste</span></div>
     <div class="fact"><b>$${num(s.drift_value)}</b><span>of parts used off-recipe, found through cycle counts</span></div>
     <div class="fact"><b>$${num(s.orphaned_value)}</b><span>of old-revision stock no recipe uses, $${num(s.receipts_phased_out_value)} of it bought after the change</span></div>`;
 }
@@ -246,7 +247,7 @@ function renderDrift(d, ready) {
   p.innerHTML = `<h2>Unknown drift</h2>
     <p class="finding">Backflushed parts always look perfect in the floor system, because it records what the recipe says. The truth shows up in cycle counts. This ties each count shortage back to the recipe and ranks what to count next.</p>
     <div class="scroll"><table><thead><tr><th>Count first</th><th>Part</th><th>Recipe today</th><th class="n">Short at counts</th><th class="n">Counts short</th><th class="n">Drift</th><th class="n">Value</th><th>Likely cause</th><th>Suggested fix</th></tr></thead><tbody>
-    ${d.drift.map(r => `<tr><td>${r.count_priority}</td><td>${esc(r.component_item_id)}</td><td>${esc(r.current_qty_per || r.parent_item_ids)}</td><td class="n">${num(r.count_shortage_qty)}</td><td class="n">${r.shortage_events} of 4</td><td class="n">${num(r.drift_pct * 100, 1)}%</td><td class="n unf">${usd(r.drift_value)}</td><td><span class="tag cause">${esc(CAUSE[r.likely_cause])}</span></td><td>${esc(r.suggested_qty_per || (r.likely_cause === "UNRECORDED_SCRAP" ? "Check scrap logging at the station" : "Recount, then trace"))}</td></tr>`).join("")}
+    ${d.drift.map(r => `<tr><td>${r.count_priority}</td><td>${esc(r.component_item_id)}</td><td>${esc(r.current_qty_per || `None now (was ${r.parent_item_ids})`)}</td><td class="n">${num(r.count_shortage_qty)}</td><td class="n">${r.shortage_events} of 4</td><td class="n">${num(r.drift_pct * 100, 1)}%</td><td class="n unf">${usd(r.drift_value)}</td><td><span class="tag cause">${esc(CAUSE[r.likely_cause])}</span></td><td>${esc(r.suggested_qty_per || (r.likely_cause === "UNRECORDED_SCRAP" ? "Check scrap logging" : "Recount, then trace"))}</td></tr>`).join("")}
     </tbody></table></div>
     <p class="note">How the cause is guessed: a shortage that stays proportional to use across three or more counts points to a wrong recipe quantity; shortages on some counts but not others point to losses nobody logged; a single shortage is a one-off. These are heuristics, labelled as likely.</p>`;
 }
@@ -308,7 +309,10 @@ async function openTrace(wo, item, eventId) {
     }
   } catch (err) { $("dlg-sub").textContent = "Couldn't load the trace: " + err.message; return; }
   if (!t || (!t.mes.length && !t.erp.length)) {
-    $("dlg-sub").textContent = "No floor events and no ERP rows: this part was never used on this work order. Its line exists only because the standard (still on the old revision) expects it, which is exactly the noise this check separates out.";
+    const v = (state.data[state.run].wo_material || []).find(r => r.work_order_id === wo && r.component_item_id === item);
+    $("dlg-sub").textContent = v && v.built_qty === 0 && v.std_qty > 0
+      ? `No floor events or ERP rows: ${wo} was built on Rev ${v.built_revs}, which doesn't use ${item}. The line appears only because the standard, still on Rev ${v.costed_rev}, allows ${num(v.std_qty)}. That gap is design-change noise, not a saving.`
+      : "No floor events or ERP rows for this part on this work order.";
     return;
   }
   const mesTotal = t.mes.reduce((a, r) => a + r.qty, 0);
