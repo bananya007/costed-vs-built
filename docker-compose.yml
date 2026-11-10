@@ -1,0 +1,64 @@
+# docker compose up
+#   mysql    one MySQL 8 server holding warp, mos, plm and the mfg_dw warehouse
+#   seed     one-off job: creates the source databases and loads the synthetic October
+#   airflow  Airflow 2.10 standalone with the costed_vs_built DAG      (localhost:8080)
+#   app      FastAPI app and page reading the warehouse                (localhost:8000)
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-demo}   # demo only; override in .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_PASSWORD:-demo}"]
+      interval: 5s
+      retries: 20
+
+  seed:
+    build: .
+    command: python -m generator.generate
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-demo}
+    volumes:
+      - ./generator:/app/generator          # writes expected.json back to the repo
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
+  airflow:
+    image: apache/airflow:2.10.5-python3.12
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags
+      _PIP_ADDITIONAL_REQUIREMENTS: "PyMySQL==1.2.3"
+      PYTHONPATH: /opt/airflow/project
+      MYSQL_HOST: mysql
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-demo}
+    volumes:
+      - ./:/opt/airflow/project
+    ports:
+      - "8080:8080"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+  app:
+    build: .
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-demo}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
