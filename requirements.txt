@@ -1,0 +1,7 @@
+# Versions tested together for this project.
+PyMySQL==1.2.3
+cryptography==50.0.1
+fastapi==0.162.0
+uvicorn==0.54.0
+pytest==9.2.0
+httpx==0.28.1
