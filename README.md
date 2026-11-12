@@ -18,7 +18,7 @@ Manufacturers carry inventory at standard cost: a fixed cost per unit, built fro
 - **The floor uses a part differently from the BOM.** Backflushed parts are recorded at BOM quantity by design, so the floor system always looks right. The truth only shows up in cycle-count shortages.
 - **Parts removed by a change stay on the shelf,** sometimes still being purchased, until they surface as a write-down.
 
-The sources are modeled on public information about Tesla: vehicles valued at standard cost ([10-K](https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm)), an in-house MySQL-backed ERP (Warp) alongside a separate floor system (MOS), a production ramp at Giga Texas, and $177M of inventory write-downs in H1 2026 ([10-Q](https://www.sec.gov/Archives/edgar/data/0001318605/000162828026049270/tsla-20260630.htm)).
+The setup is shaped by public information about Tesla: vehicles are carried at standard cost (10-K), and its ERP (Warp) and floor system (MOS) are separate systems. Everything else, including tables, parts, prices and thresholds, is a general manufacturing design.
 
 ## What it does
 
@@ -121,8 +121,8 @@ uvicorn app.main:app --reload                            # http://localhost:8000
 
 | | |
 | --- | --- |
-| Standard costing for vehicles; H1 2026 write-downs | Tesla's 10-K and 10-Q, linked above |
-| Warp as an in-house, MySQL-backed ERP; MOS as the floor system | Tesla job postings and press coverage |
+| Standard costing for vehicles | Tesla's 10-K, linked above |
+| Warp (ERP) and MOS (floor system) as separate systems | Tesla job postings and press coverage |
 | Every table, column, part, price, threshold and close step | A general manufacturing design, not Tesla's internal one |
 | A PLM system as the source of change orders | Assumed; which PLM Tesla uses isn't public |
 | Drift cause labels | Heuristics |
